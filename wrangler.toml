@@ -5,5 +5,5 @@ pages_build_output_dir = "./public"
 [[d1_databases]]
 binding = "DB"
 database_name = "sondaggio-anonimo-db"
-database_id = "INSERISCI_QUI_IL_DATABASE_ID"
+database_id = "4f84fb0d-0d44-4bc6-9f46-5549a73fc259"
 migrations_dir = "migrations"
