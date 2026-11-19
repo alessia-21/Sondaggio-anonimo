@@ -1,24 +1,21 @@
 <!doctype html>
-<html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Risultati sondaggio</title>
+<html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Amministrazione sondaggio</title>
 <style>
-body{font:16px system-ui,sans-serif;background:#f5f6f8;color:#20242b;margin:0;min-height:100vh;display:grid;place-items:center;padding:24px}
-main{background:white;border:1px solid #e5e7eb;border-radius:16px;padding:28px;width:min(100%,440px)}
-input,button{font:inherit;padding:12px;border:1px solid #ccd2dc;border-radius:9px;width:100%;margin:7px 0}
-button{cursor:pointer;background:#20242b;color:white}.row{display:flex;justify-content:space-between;padding:13px 0;border-bottom:1px solid #eee}
-#results{margin-top:20px}small{color:#687080}
+*{box-sizing:border-box}body{font:16px system-ui,sans-serif;background:#f5f6f8;color:#20242b;margin:0;min-height:100vh;display:grid;place-items:center;padding:20px}main{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:26px;width:min(100%,520px)}input,button{font:inherit;padding:12px;border:1px solid #ccd2dc;border-radius:9px;width:100%;margin:6px 0}button{cursor:pointer;background:#20242b;color:white}button.secondary{background:white;color:#20242b}button.danger{background:#9b2525}.section{border-top:1px solid #eee;margin-top:22px;padding-top:16px}.row{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid #eee}small{color:#687080}#msg{white-space:pre-wrap;color:#475569;min-height:24px}
 </style></head><body><main>
-<h1>Risultati riservati</h1><p>Inserisci la chiave amministratore configurata su Cloudflare.</p>
-<input id="secret" type="password" placeholder="Chiave amministratore" autocomplete="current-password">
-<button id="load">Mostra risultati</button><div id="results" aria-live="polite"></div>
+<h1>Gestione sondaggio</h1><p>Inserisci le tre opzioni. Il sistema le abbina casualmente ad A, B e C. Il pannello non mostrerà mai le corrispondenze.</p>
+<label>Chiave amministratore</label><input id="admin" type="password" placeholder="ADMIN_TOKEN" autocomplete="current-password">
+<section class="section"><h3>Nuovo sondaggio</h3>
+<input id="opt1" maxlength="200" placeholder="Prima opzione segreta"><input id="opt2" maxlength="200" placeholder="Seconda opzione segreta"><input id="opt3" maxlength="200" placeholder="Terza opzione segreta">
+<button id="start">Mescola e avvia sondaggio</button>
+<small>Le associazioni vengono generate casualmente sul server. Non saranno mostrate in questa pagina.</small></section>
+<section class="section"><h3>Risultati</h3><button class="secondary" id="results">Aggiorna conteggi</button><div id="counts"></div></section>
+<section class="section"><h3>Azzeramento</h3><button class="danger" id="reset">Cancella voti e opzioni e ricomincia</button><small>Operazione irreversibile: elimina i voti e le opzioni correnti.</small></section>
+<div id="msg" role="status" aria-live="polite"></div>
 <script>
-document.querySelector("#load").addEventListener("click", async()=>{
- const out=document.querySelector("#results"); out.textContent="Caricamento…";
- try{
-  const r=await fetch("/api/results",{headers:{Authorization:"Bearer "+document.querySelector("#secret").value}});
-  const d=await r.json(); if(!r.ok) throw new Error(d.error||"Accesso negato");
-  out.innerHTML="";
-  for(const k of ["A","B","C"]){const row=document.createElement("div");row.className="row";const l=document.createElement("span");l.textContent="Opzione "+k;const v=document.createElement("strong");v.textContent=d.counts[k]??0;row.append(l,v);out.append(row);}
-  const total=document.createElement("p");total.textContent="Voti totali: "+d.total;out.append(total);
- }catch(e){out.textContent=e.message;}
-});
+const $=id=>document.getElementById(id),msg=t=>$("msg").textContent=t;
+async function api(path,method="GET",body){const r=await fetch(path,{method,headers:{"Content-Type":"application/json","Authorization":"Bearer "+$("admin").value},...(body?{body:JSON.stringify(body)}:{})});const d=await r.json();if(!r.ok)throw Error(d.error||"Errore");return d}
+$("start").onclick=async()=>{try{const options=[$("opt1").value.trim(),$("opt2").value.trim(),$("opt3").value.trim()];if(options.some(x=>!x))throw Error("Compila tutte e tre le opzioni.");await api("/api/setup","POST",{options});msg("Sondaggio avviato. Le tre associazioni casuali sono state salvate.");$("opt1").value=$("opt2").value=$("opt3").value="";}catch(e){msg(e.message)}};
+$("results").onclick=async()=>{try{const d=await api("/api/results");$("counts").innerHTML="";for(const k of ["A","B","C"]){const row=document.createElement("div");row.className="row";const a=document.createElement("span"),b=document.createElement("strong");a.textContent="Opzione "+k;b.textContent=d.counts[k];row.append(a,b);$("counts").append(row)}const t=document.createElement("p");t.textContent="Voti totali: "+d.total;$("counts").append(t);msg("Conteggi aggiornati.")}catch(e){msg(e.message)}};
+$("reset").onclick=async()=>{if(!confirm("Vuoi cancellare definitivamente tutti i voti e le opzioni?"))return;try{await api("/api/reset","POST",{});$("counts").innerHTML="";msg("Sondaggio azzerato. Puoi inserire tre nuove opzioni.")}catch(e){msg(e.message)}};
 </script></main></body></html>

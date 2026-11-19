@@ -1,6 +1,0 @@
-CREATE TABLE IF NOT EXISTS votes (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  voter_hash TEXT NOT NULL UNIQUE,
-  choice TEXT NOT NULL CHECK (choice IN ('A','B','C')),
-  created_at TEXT NOT NULL
-);

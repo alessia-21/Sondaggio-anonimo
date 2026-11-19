@@ -1,69 +1,15 @@
 <!doctype html>
-<html lang="it">
-<head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#ffffff">
-  <title>Sondaggio anonimo</title>
-  <style>
-    *{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:#f5f6f8;color:#20242b;font:16px system-ui,-apple-system,Segoe UI,sans-serif}
-    main{width:min(100%,440px);background:#fff;border:1px solid #e5e7eb;border-radius:18px;padding:30px;box-shadow:0 12px 36px #1822300d}
-    h1{font-size:25px;margin:0 0 8px}p{color:#606875;line-height:1.5}
-    .choices{display:grid;gap:12px;margin:26px 0 16px}
-    button{border:1px solid #d8dde5;border-radius:12px;background:#fff;padding:17px;font-size:18px;font-weight:650;cursor:pointer}
-    button:hover{border-color:#596579;background:#f8fafc}button:disabled{opacity:.55;cursor:not-allowed}
-    #status{min-height:26px;font-size:14px;margin-top:12px}.small{font-size:12px;color:#818895}
-  </style>
-</head>
-<body><main>
-  <h1>Sondaggio anonimo</h1>
-  <p>Scegli una sola opzione. Il tuo voto non sarà associato al tuo nome o alla tua email.</p>
-  <div class="choices">
-    <button data-choice="A">Opzione A</button>
-    <button data-choice="B">Opzione B</button>
-    <button data-choice="C">Opzione C</button>
-  </div>
-  <div id="status" role="status" aria-live="polite"></div>
-  <p class="small">È consentito un voto per browser su questo dispositivo.</p>
-</main>
-<script>
-const statusEl = document.querySelector("#status");
-const buttons = [...document.querySelectorAll("button[data-choice]")];
-const key = "anonymous_poll_voter_v1";
-function token() {
-  let value = localStorage.getItem(key);
-  if (!value) {
-    const bytes = crypto.getRandomValues(new Uint8Array(32));
-    value = [...bytes].map(x => x.toString(16).padStart(2,"0")).join("");
-    localStorage.setItem(key, value);
-  }
-  return value;
-}
-async function checkAlreadyVoted() {
-  try {
-    const r = await fetch("/api/status", {headers: {"X-Voter-Token": token()}});
-    if (r.ok && (await r.json()).voted) {
-      buttons.forEach(b => b.disabled = true);
-      statusEl.textContent = "Hai già espresso il tuo voto. Grazie!";
-    }
-  } catch (_) {}
-}
-buttons.forEach(button => button.addEventListener("click", async () => {
-  buttons.forEach(b => b.disabled = true);
-  statusEl.textContent = "Registrazione del voto…";
-  try {
-    const r = await fetch("/api/vote", {
-      method: "POST",
-      headers: {"Content-Type":"application/json","X-Voter-Token":token()},
-      body: JSON.stringify({choice:button.dataset.choice})
-    });
-    const data = await r.json();
-    if (r.ok && data.ok) statusEl.textContent = "Voto registrato. Grazie per aver partecipato!";
-    else if (r.status === 409) statusEl.textContent = "Hai già votato. Grazie!";
-    else throw new Error(data.error || "Errore");
-  } catch (_) {
-    statusEl.textContent = "Non è stato possibile registrare il voto. Riprova.";
-    buttons.forEach(b => b.disabled = false);
-  }
-}));
-checkAlreadyVoted();
+<html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sondaggio anonimo</title>
+<style>
+*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:#f5f6f8;color:#20242b;font:16px system-ui,sans-serif}main{width:min(100%,440px);background:#fff;border:1px solid #e5e7eb;border-radius:18px;padding:30px}h1{font-size:25px;margin:0 0 8px}p{color:#606875;line-height:1.5}.choices{display:grid;gap:12px;margin:26px 0 16px}button{border:1px solid #d8dde5;border-radius:12px;background:#fff;padding:17px;font-size:18px;font-weight:650;cursor:pointer}button:disabled{opacity:.5;cursor:not-allowed}#status{min-height:26px;font-size:14px}.small{font-size:12px;color:#818895}
+</style></head><body><main>
+<h1>Sondaggio anonimo</h1><p>Scegli una sola opzione.</p>
+<div class="choices"><button data-choice="A">Opzione A</button><button data-choice="B">Opzione B</button><button data-choice="C">Opzione C</button></div>
+<div id="status" role="status" aria-live="polite"></div><p class="small">Un voto per browser su questo dispositivo.</p>
+</main><script>
+const statusEl=document.querySelector("#status"),buttons=[...document.querySelectorAll("button[data-choice]")],key="anonymous_poll_voter_v3";
+function token(){let v=localStorage.getItem(key);if(!v){v=[...crypto.getRandomValues(new Uint8Array(32))].map(x=>x.toString(16).padStart(2,"0")).join("");localStorage.setItem(key,v)}return v}
+async function init(){try{const [p,v]=await Promise.all([fetch("/api/poll-status"),fetch("/api/status",{headers:{"X-Voter-Token":token()}})]);const poll=await p.json(),already=(await v.json()).voted;if(!poll.configured){statusEl.textContent="Il sondaggio non è ancora attivo.";buttons.forEach(b=>b.disabled=true)}else if(already){statusEl.textContent="Hai già votato. Grazie!";buttons.forEach(b=>b.disabled=true)}}catch(e){statusEl.textContent="Impossibile verificare lo stato del sondaggio."}}
+buttons.forEach(b=>b.addEventListener("click",async()=>{buttons.forEach(x=>x.disabled=true);statusEl.textContent="Registrazione del voto…";try{const r=await fetch("/api/vote",{method:"POST",headers:{"Content-Type":"application/json","X-Voter-Token":token()},body:JSON.stringify({choice:b.dataset.choice})}),d=await r.json();if(r.ok)statusEl.textContent="Voto registrato. Grazie per aver partecipato!";else if(r.status===409)statusEl.textContent="Hai già votato.";else if(r.status===423)statusEl.textContent="Il sondaggio non è attivo.";else throw Error(d.error||"Errore")}catch(e){statusEl.textContent="Errore durante la registrazione. Riprova.";buttons.forEach(x=>x.disabled=false)}}));
+init();
 </script></body></html>
