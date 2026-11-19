@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Risultati sondaggio</title>
+<style>
+body{font:16px system-ui,sans-serif;background:#f5f6f8;color:#20242b;margin:0;min-height:100vh;display:grid;place-items:center;padding:24px}
+main{background:white;border:1px solid #e5e7eb;border-radius:16px;padding:28px;width:min(100%,440px)}
+input,button{font:inherit;padding:12px;border:1px solid #ccd2dc;border-radius:9px;width:100%;margin:7px 0}
+button{cursor:pointer;background:#20242b;color:white}.row{display:flex;justify-content:space-between;padding:13px 0;border-bottom:1px solid #eee}
+#results{margin-top:20px}small{color:#687080}
+</style></head><body><main>
+<h1>Risultati riservati</h1><p>Inserisci la chiave amministratore configurata su Cloudflare.</p>
+<input id="secret" type="password" placeholder="Chiave amministratore" autocomplete="current-password">
+<button id="load">Mostra risultati</button><div id="results" aria-live="polite"></div>
+<script>
+document.querySelector("#load").addEventListener("click", async()=>{
+ const out=document.querySelector("#results"); out.textContent="Caricamento…";
+ try{
+  const r=await fetch("/api/results",{headers:{Authorization:"Bearer "+document.querySelector("#secret").value}});
+  const d=await r.json(); if(!r.ok) throw new Error(d.error||"Accesso negato");
+  out.innerHTML="";
+  for(const k of ["A","B","C"]){const row=document.createElement("div");row.className="row";const l=document.createElement("span");l.textContent="Opzione "+k;const v=document.createElement("strong");v.textContent=d.counts[k]??0;row.append(l,v);out.append(row);}
+  const total=document.createElement("p");total.textContent="Voti totali: "+d.total;out.append(total);
+ }catch(e){out.textContent=e.message;}
+});
+</script></main></body></html>
